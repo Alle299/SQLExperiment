@@ -1,0 +1,8 @@
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\obj\Debug\SQLExperiment.csproj.AssemblyReference.cache
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\obj\Debug\SQLExperiment.csproj.SuggestedBindingRedirects.cache
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\obj\Debug\SQLExperiment.csproj.CoreCompileInputs.cache
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\bin\Debug\SQLExperiment.exe.config
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\bin\Debug\SQLExperiment.exe
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\bin\Debug\SQLExperiment.pdb
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\obj\Debug\SQLExperiment.exe
+C:\Users\allew\Source\Repos\Alle299\SQLExperiment\SQLExperiment\obj\Debug\SQLExperiment.pdb
