@@ -3,10 +3,22 @@ using SQLExperiment.Models;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Data.Common;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Reflection;
+using System.Runtime.InteropServices.ComTypes;
+using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SQLExperiment
 {
@@ -19,12 +31,38 @@ namespace SQLExperiment
             List<string> commands = new List<string>{ "clear", "add", "remove" };
             List<string> entities = new List<string> { "table", "field" };
             List<string> fillerWords = new List<string> { "named", "a", "i", "want" };
+            List<string> ReservedKeywords = new List<string> {
+                "ADD", "EXTERNAL", "PROCEDURE", "ALL", "FETCH", "PUBLIC", "ALTER", "FILE", "RAISERROR", "AND",
+                "FILLFACTOR", "READ", "ANY", "FOR", "READTEXT", "AS", "FOREIGN", "RECONFIGURE", "ASC",
+                "FREETEXT", "REFERENCES", "AUTHORIZATION", "FREETEXTTABLE", "REPLICATION", "BACKUP",
+                "FROM", "RESTORE", "BEGIN", "FULL", "RESTRICT", "BETWEEN", "FUNCTION", "RETURN", "BREAK", "GOTO",
+                "REVERT", "BROWSE", "GRANT", "REVOKE", "BULK", "GROUP", "RIGHT", "BY", "HAVING",
+                "ROLLBACK", "CASCADE", "HOLDLOCK", "ROWCOUNT", "CASE", "IDENTITY", "ROWGUIDCOL", "CHECK",
+                "IDENTITY_INSERT", "RULE", "CHECKPOINT", "IDENTITYCOL", "SAVE", "CLOSE", "IF", "SCHEMA",
+                "CLUSTERED", "IN", "SECURITYAUDIT", "COALESCE", "INDEX", "SELECT", "COLLATE", "INNER", "SEMANTICKEYPHRASETABLE",
+                "COLUMN", "INSERT", "SEMANTICSIMILARITYDETAILSTABLE", "COMMIT", "INTERSECT", "SEMANTICSIMILARITYTABLE",
+                "COMPUTE", "INTO", "SESSION_USER", "CONSTRAINT", "IS", "SET", "CONTAINS", "JOIN", "SETUSER",
+                "CONTAINSTABLE", "KEY", "SHUTDOWN", "CONTINUE", "KILL", "SOME", "CONVERT", "LEFT", "STATISTICS",
+                "CREATE", "LIKE", "SYSTEM_USER", "CROSS", "LINENO", "TABLE", "CURRENT", "LOAD", "TABLESAMPLE",
+                "CURRENT_DATE", "MERGE", "TEXTSIZE", "CURRENT_TIME", "NATIONAL", "THEN", "CURRENT_TIMESTAMP",
+                "NOCHECK", "TO", "CURRENT_USER", "NONCLUSTERED", "TOP", "CURSOR", "NOT", "TRAN",
+                "DATABASE", "NULL", "TRANSACTION", "DBCC", "NULLIF", "TRIGGER", "DEALLOCATE", "OF", "TRUNCATE",
+                "DECLARE", "OFF", "TRY_CONVERT", "DEFAULT", "OFFSETS", "TSEQUAL", "DELETE", "ON",
+                "UNION", "DENY", "OPEN", "UNIQUE", "DESC", "OPENDATASOURCE", "UNPIVOT", "DISK",
+                "OPENQUERY", "UPDATE", "DISTINCT", "OPENROWSET", "UPDATETEXT", "DISTRIBUTED", "OPENXML",
+                "USE", "DOUBLE", "OPTION", "USER", "DROP", "OR", "VALUES", "DUMP", "ORDER", "VARYING",
+                "ELSE", "OUTER", "VIEW", "END", "OVER", "WAITFOR", "ERRLVL", "PERCENT", "WHEN", "ESCAPE",
+                "PIVOT", "WHERE", "EXCEPT", "PLAN", "WHILE", "EXEC", "PRECISION", "WITH", "EXECUTE",
+                "PRIMARY", "WITHIN", "EXISTS", "PRINT", "WRITETEXT", "EXIT", "PROC",
+             };
+
             List<string> invalidValues = new List<string> { "_build" };
             Dictionary<string,string> synonyms = new Dictionary<string, string> {
                 { "create", "add"},
                 { "give", "add"},
                 { "build", "add"},
                 { "make", "add"},
+                { "column", "field"},
                 { "delete", "remove"},
             };
             var tables = new List<__DatabaseTable>();
@@ -33,10 +71,16 @@ namespace SQLExperiment
             // Presentation
             Console.WriteLine("---------------------------------------------------------------------------------------------");
             Console.WriteLine("  A simple experiment to see if I cane make DB migration code based on used plain text input.");
+            Console.WriteLine("  Commands work irregardles of case, synonyms replaces the actions to those below abd filler");
+            Console.WriteLine("  are ignored.");
+            Console.WriteLine("  Values can not be on the Transact-SQL Reserved Keywords list.");
             Console.WriteLine("");
             Console.WriteLine("  Add - table,field");
             Console.WriteLine("  Clear - resets commands");
             Console.WriteLine("  Print - Ends the loop");
+            Console.WriteLine("");
+            Console.WriteLine("Exemples:");
+            Console.WriteLine("'Create Customer Table' and 'add table customer' will produce the exact same result.");
             Console.WriteLine("---------------------------------------------------------------------------------------------");
             Console.WriteLine("");
 
@@ -45,14 +89,22 @@ namespace SQLExperiment
             {
 
                 // Type your command line and enter.
-                Console.WriteLine($" ({commandLines.Count}) Entrer Command:");
-                commandLine = Console.ReadLine().ToLower();
-
-                // Synonym replacements
+                Console.WriteLine($" ({commandLines.Count}) Enter Command:");
+                commandLine = Console.ReadLine();
+ 
+                // Synonym case insensitive replacements
                 foreach (var synonym in synonyms)
                 {
-                    commandLine = commandLine.Replace(synonym.Key,synonym.Value);
+                    commandLine = Regex.Replace(commandLine, synonym.Key, synonym.Value, RegexOptions.IgnoreCase);
+
+                    // commandLine = commandLine.Replace(synonym.Key,synonym.Value);
                 }
+
+
+                //string input = "hello WoRlD";
+                //string result =
+                //   Regex.Replace(input, "world", "csharp", RegexOptions.IgnoreCase);
+
 
                 // Break up command line
                 var commandWords = commandLine.Split(' ').ToList();
@@ -73,7 +125,7 @@ namespace SQLExperiment
                 }
 
                 // Get action from CommandWords
-                var findActions = commandWords.Where(i => commands.Contains(i)).ToList();
+                var findActions = commandWords.ConvertAll(d => d.ToLower()).Where(i => commands.Contains(i)).ToList();
                 if (findActions.Count != 1)
                 {
                     Console.WriteLine("Too many or too few commands in one line! ");
@@ -81,7 +133,7 @@ namespace SQLExperiment
                 }
 
                 // Get entities from CommandWords
-                var findEntities = commandWords.Where(i => entities.Contains(i)).ToList();
+                var findEntities = commandWords.ConvertAll(d => d.ToLower()).Where(i => entities.Contains(i)).ToList();
                 if (findEntities.Count != 1)
                 {
                     Console.WriteLine("Too many or too few entities in one line! ");
@@ -89,15 +141,19 @@ namespace SQLExperiment
                 }
 
                 // Make sure theres at least one word after the found command
-                int whereIsAction = commandWords.FindIndex(a => a.Contains(findActions[0]));
+                int whereIsAction = commandWords.ConvertAll(d => d.ToLower()).FindIndex(a => a.Contains(findActions[0]));
+                // Convert Action into lower case
+                commandWords[whereIsAction] = commandWords[whereIsAction].ToLower();
                 if (whereIsAction == commandWords.Count-1)
                 {
                     Console.WriteLine("No identifier after command! ");
                     continue;
                 }
 
-                // Make sure theres at least one word before or after the found entity, thast is not an action.
-                int whereIsEntity = commandWords.FindIndex(a => a.Contains(findEntities[0]));
+                // Make sure theres at least one word before or after the found entity, that is not an action.
+                int whereIsEntity = commandWords.ConvertAll(d => d.ToLower()).FindIndex(a => a.Contains(findEntities[0]));
+                // Convert Action into lower case
+                commandWords[whereIsEntity] = commandWords[whereIsEntity].ToLower();
                 if (whereIsEntity == commandWords.Count - 1 && whereIsAction == whereIsEntity - 1)
                 {
                     Console.WriteLine("No valid identifier before or after entity! ");
@@ -113,9 +169,14 @@ namespace SQLExperiment
                     continue;
                 }
 
+                // check to make sure the value ios not on the Reserved Keywords (Transact-SQL) list.
+                if (ReservedKeywords.Contains(commandWords[whereIsValue]))
+                {
+                    Console.WriteLine($"Value is in the Reserved Keywords list ( {commandWords[whereIsValue]} ).");
+                    continue;
+                }
+
                 #endregion
-
-
 
                 // Command Validation
                 try
@@ -126,6 +187,14 @@ namespace SQLExperiment
                     if (commandWords.Contains("add") &&
                         commandWords.Contains("table") )
                     {
+                        // vaidate the Value (Table name)
+                        var regex = new Regex(@"^[\p{L}_][\p{L}\p{N}@$#_]{0,127}$");
+                        if ( regex.IsMatch(commandWords[whereIsValue]) == false )
+                        {
+                            Console.WriteLine($"SQL invalid table name {commandWords[whereIsValue]}.");
+                            continue;
+                        }
+
                         var table = new __DatabaseTable();
                         table.Table_Name = WordProcess.CapitalizeFirstLetter(commandWords[whereIsValue]);
                         table.Columns = new List<__DatabaseTableColumn>

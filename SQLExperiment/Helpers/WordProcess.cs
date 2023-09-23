@@ -10,7 +10,7 @@ namespace SQLExperiment.Helpers
     {
         public static string CapitalizeFirstLetter(string word)
         {
-            return word.Substring(0,1).ToUpper() + word.Substring(1,word.Length-1).ToLower();
+            return word.Substring(0,1).ToUpper() + word.Substring(1,word.Length-1);
         }
     }
 }
