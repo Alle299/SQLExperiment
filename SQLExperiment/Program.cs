@@ -79,8 +79,8 @@ namespace SQLExperiment
             Console.WriteLine("  Clear - resets commands");
             Console.WriteLine("  Print - Ends the loop");
             Console.WriteLine("");
-            Console.WriteLine("Exemples:");
-            Console.WriteLine("'Create Customer Table' and 'add table customer' will produce the exact same result.");
+            Console.WriteLine("  Exemples:");
+            Console.WriteLine("  'Create Customer Table' and 'add table customer' will produce the exact same result.");
             Console.WriteLine("---------------------------------------------------------------------------------------------");
             Console.WriteLine("");
 
