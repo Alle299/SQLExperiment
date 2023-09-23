@@ -1,6 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\SQLExperiment",
+    "\\SQLExperiment\\Models"
   ],
+  "SelectedNode": "\\SQLExperiment\\Program.cs",
   "PreviewInSolutionExplorer": false
 }
