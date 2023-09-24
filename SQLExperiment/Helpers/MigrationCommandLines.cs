@@ -199,7 +199,7 @@ namespace SQLExperiment.Helpers
                 {
                     var nullable = commandWords.Contains("field") ? ".Nullable()" : "";
                     var values = commandWords[whereIsValue].Split('.');
-                    __migrationCommand.MigrationsCommands.Add($"Create.Column(\"{values[1]}\").OnTable(\"{values[2]}\").As{dataType[whereIsDataType]}(){nullable};" + Environment.NewLine);
+                    __migrationCommand.MigrationsCommands.Add($"Create.Column(\"{values[1]}\").OnTable(\"{values[0]}\").As{dataType[whereIsDataType]}(){nullable};" + Environment.NewLine);
                     // Create.Column("column").OnTable("table").AsString().Nullable();
                     //var databaseTableColumn = new __DatabaseTableColumn
                     //{
