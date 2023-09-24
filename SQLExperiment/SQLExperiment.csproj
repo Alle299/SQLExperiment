@@ -43,9 +43,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Helpers\MigrationCommandLines.cs" />
     <Compile Include="Helpers\WordProcess.cs" />
     <Compile Include="Models\__DatabaseTable.cs" />
     <Compile Include="Models\__DatabaseTableColumn.cs" />
+    <Compile Include="Models\__MigrationCommand.cs" />
     <Compile Include="Models\__PrimaryKey.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
