@@ -136,8 +136,8 @@ namespace SQLExperiment.Helpers
             // Get index of written datatype in Datatype list.
             var whereIsDataType = dataType.ConvertAll(d => d.ToLower()).FindIndex(a => commandWords.Contains(a.ToLower()));
 
-            // var findDataTypes = whereIsDataType
-            var q = 1;
+            // Find first numerical value if any
+            var whereIsNummerical = commandWords.FindIndex(a => Regex.IsMatch(a, @"^\d+$"));
             #endregion
 
             // Command Validation
@@ -172,25 +172,10 @@ namespace SQLExperiment.Helpers
                     sb.Append("   .WithColumn(\"RemovedBy\").AsGuid().Nullable();" + Environment.NewLine + Environment.NewLine);
 
                     __migrationCommand.MigrationsCommands.Add(sb.ToString());
-
-                    //var table = new __DatabaseTable();
-                    //table.Table_Name = WordProcess.CapitalizeFirstLetter(commandWords[whereIsValue]);
-                    //table.Columns = new List<__DatabaseTableColumn>
-                    //    {
-                    //        new __DatabaseTableColumn { IsPrimaryKey= true, ColumnName = table.Table_Name + "ID", DataType ="Guid", IsNullable=false},
-                    //        new __DatabaseTableColumn { ColumnName = "Name", DataType ="String", IsNullable=true, CharacterMaximumLength =50},
-                    //        new __DatabaseTableColumn { ColumnName = "Created", DataType = "DateTime", IsNullable=false},
-                    //        new __DatabaseTableColumn { ColumnName = "CreatedBy", DataType = "Guid", IsNullable = false},
-                    //        new __DatabaseTableColumn { ColumnName = "Modified", DataType = "DateTime", IsNullable=true},
-                    //        new __DatabaseTableColumn { ColumnName = "ModifiedBy", DataType = "Guid", IsNullable=true},
-                    //        new __DatabaseTableColumn { ColumnName = "Removed", DataType = "DateTime", IsNullable=true},
-                    //        new __DatabaseTableColumn { ColumnName = "RemovedBy", DataType = "Guid", IsNullable=true},
-                    //    };
-                    //tables.Add(table);
                     error = false;
                 }
 
-                // Add Filed command
+                #region Add Fieled command
                 if (commandWords.Contains("add") &&
                     commandWords.Contains("field") &&
                     whereIsDataType > -1 &&
@@ -199,34 +184,14 @@ namespace SQLExperiment.Helpers
                 {
                     var nullable = commandWords.Contains("field") ? ".Nullable()" : "";
                     var values = commandWords[whereIsValue].Split('.');
-                    __migrationCommand.MigrationsCommands.Add($"Create.Column(\"{values[1]}\").OnTable(\"{values[0]}\").As{dataType[whereIsDataType]}(){nullable};" + Environment.NewLine);
-                    // Create.Column("column").OnTable("table").AsString().Nullable();
-                    //var databaseTableColumn = new __DatabaseTableColumn
-                    //{
-                    //    ColumnName = WordProcess.CapitalizeFirstLetter(commandWords[whereIsValue]),
-                    //    DataType = "String",
-                    //    IsNullable = true,
-                    //    CharacterMaximumLength = 50
-                    //};
-                    // Check for field attribute values
-                    //if (commandWords.Contains("datetime"))
-                    //{
-                    //    databaseTableColumn.DataType = "DateTime";
-                    //    databaseTableColumn.CharacterMaximumLength = null;
-                    //}
-                    //if (commandWords.Contains("guid"))
-                    //{
-                    //    databaseTableColumn.DataType = "Guid";
-                    //    databaseTableColumn.CharacterMaximumLength = null;
-                    //}
-                    //if (commandWords.Contains("notnullable"))
-                    //{
-                    //    databaseTableColumn.IsNullable = false;
-                    //}
-
-                 //   tables[0].Columns.Insert(tables[0].Columns.Count - 6, databaseTableColumn);
+                    var size = whereIsNummerical > -1 ? commandWords[whereIsNummerical] : "";
+                    __migrationCommand.MigrationsCommands.Add($"Create.Column(\"{values[1]}\").OnTable(\"{values[0]}\").As{dataType[whereIsDataType]}({size}){nullable};" + Environment.NewLine);
                     error = false;
                 }
+                #endregion
+
+
+                // Alter.Table("_build").AlterColumn("Alle").AsInt32().Nullable();
 
                 // ------------------------------------------------
                 if (error)
