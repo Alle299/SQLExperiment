@@ -6,13 +6,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace SQLExperiment.Helpers
 {
     public static class MigrationCommandLines
     {
 
-        public static List<string> commands = new List<string> { "clear", "add", "remove" };
+        public static List<string> commands = new List<string> { "clear", "add", "remove", "alter", "rename" };
         public static List<string> entities = new List<string> { "table", "field" };
         public static List<string> fillerWords = new List<string> { "named", "a", "i", "want" };
         public static List<string> ReservedKeywords = new List<string> {
@@ -47,14 +48,26 @@ namespace SQLExperiment.Helpers
                 { "make", "add"},
                 { "column", "field"},
                 { "delete", "remove"},
+                { "change", "alter"},
             };
         public static List<string> dataType = new List<string> { "Binary", "Boolean" ,"Byte", "Currency", "Custom","Date", "DateTime", "DateTime2", "DateTimeOffset",
                 "Decimal", "Double", "FixedLengthAnsiString", "FixedLengthString", "Float", "Guid", "Int16", "Int32", "Int64", "String", "Time", "XML", 
         };
+        public static List<string> specialAttributeKeywords = new List<string>
+        {
+            "to",
+        };
 
-
+        /// <summary>
+        /// Main processing function.
+        /// </summary>
+        /// <param name="__migrationCommand"></param>
+        /// <param name="commandLine"></param>
+        /// <returns></returns>
         public static __MigrationCommand ProcessLine(__MigrationCommand __migrationCommand, string commandLine)
         {
+            // Declerations
+
 
             // Synonym case insensitive replacements
             foreach (var synonym in synonyms)
@@ -138,6 +151,24 @@ namespace SQLExperiment.Helpers
 
             // Find first numerical value if any
             var whereIsNummerical = commandWords.FindIndex(a => Regex.IsMatch(a, @"^\d+$"));
+
+            // Get SpecialAttributeKeywords and values
+            var attributeKeywords = new Dictionary<string, string>();
+            try
+            {
+
+                var commandAttributes = commandWords.ConvertAll(d => d.ToLower()).FindAll(c => specialAttributeKeywords.Contains(c));
+                foreach (var attribute in commandAttributes)
+                {
+                    var findAttributeIndex = commandWords.FindIndex(a => a == attribute) + 1;
+                    attributeKeywords.Add(attribute, commandWords[findAttributeIndex]);
+                }
+            } catch
+            {
+                Console.WriteLine($"Bad attribute value for attribute {attributeKeywords.Last().Key }.");
+                return __migrationCommand;
+            }
+
             #endregion
 
             // Command Validation
@@ -145,10 +176,10 @@ namespace SQLExperiment.Helpers
             {
                 var error = true;
 
-                // Add Table command
+                #region  Add Table command
                 if (commandWords.Contains("add") &&
                     commandWords.Contains("table") &&
-                    commandWords[whereIsValue].Contains('.') == false)
+                    commandWords[whereIsValue].Contains('.') == false )
                 {
                     // vaidate the Value (Table name)
                     var regex = new Regex(@"^[\p{L}_][\p{L}\p{N}@$#_]{0,127}$");
@@ -174,8 +205,28 @@ namespace SQLExperiment.Helpers
                     __migrationCommand.MigrationsCommands.Add(sb.ToString());
                     error = false;
                 }
+                #endregion
 
-                #region Add Fieled command
+                #region Rename Table command
+                if (commandWords.Contains("rename") &&
+                    commandWords.Contains("table") &&
+                    commandWords[whereIsValue].Contains('.') == false )
+                {
+                    var tableName = WordProcess.CapitalizeFirstLetter(commandWords[whereIsValue]);
+                    var to = WordProcess.CapitalizeFirstLetter(attributeKeywords["to"]);
+                    if (String.IsNullOrEmpty(to))
+                    {
+                        Console.WriteLine($"Bad or missing 'To' attribute value.");
+                        return __migrationCommand;
+                    }
+                    __migrationCommand.MigrationsCommands.Add($"Rename.Table(\"{tableName}\").To(\"{to}\");");
+                    error = false;
+                }
+                #endregion
+
+                //Rename.Table("Alle").To("Alle");
+
+                #region Add Field command
                 if (commandWords.Contains("add") &&
                     commandWords.Contains("field") &&
                     whereIsDataType > -1 &&
@@ -190,10 +241,44 @@ namespace SQLExperiment.Helpers
                 }
                 #endregion
 
+                #region Alter Field command
+                if (commandWords.Contains("alter") &&
+                    commandWords.Contains("field") &&
+                    whereIsDataType > -1 &&
+                    commandWords[whereIsValue].Contains('.')
+                    )
+                {
+                    var nullable = commandWords.Contains("field") ? ".Nullable()" : "";
+                    var values = commandWords[whereIsValue].Split('.');
+                    var size = whereIsNummerical > -1 ? commandWords[whereIsNummerical] : "";
 
-                // Alter.Table("_build").AlterColumn("Alle").AsInt32().Nullable();
+                    __migrationCommand.MigrationsCommands.Add($"Alter.Table(\"{values[0]}\").AlterColumn(\"{values[1]}\").As{dataType[whereIsDataType]}({size}){nullable};");
+                    error = false;
+                }
+                #endregion
 
-                // ------------------------------------------------
+                #region Rename Field command
+                if (commandWords.Contains("rename") &&
+                    commandWords.Contains("field") &&
+                    commandWords[whereIsValue].Contains('.')
+                    )
+                {
+                    var values = commandWords[whereIsValue].Split('.');
+                    var to = WordProcess.CapitalizeFirstLetter(attributeKeywords["to"]);
+                    if(String.IsNullOrEmpty(to))
+                    {
+                        Console.WriteLine($"Bad or missing 'To' attribute value.");
+                        return __migrationCommand;
+                    }
+                    __migrationCommand.MigrationsCommands.Add($"Rename.Column(\"{WordProcess.CapitalizeFirstLetter(values[1])}\").OnTable(\"{WordProcess.CapitalizeFirstLetter(values[0])}\").To(\"{to}\");");
+                    error = false;
+                }
+                #endregion
+
+                    //Rename.Table("Alle").To("Alle");
+                    //Rename.Column("Alle").OnTable("Alle").To("Alle");
+
+                    // ------------------------------------------------
                 if (error)
                 {
                     Console.WriteLine("Invallid command! ");

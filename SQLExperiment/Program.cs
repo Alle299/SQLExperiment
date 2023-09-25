@@ -69,11 +69,14 @@ namespace SQLExperiment
             }
 
             // Migration class code Output
+            Console.WriteLine("--- Print CommandLines ----------------------------------------------");
             Console.WriteLine("");
             foreach (var line in __migrationCommand.CommandLines)
             {
                 Console.WriteLine(line);
             }
+            Console.WriteLine("");
+            Console.WriteLine("--- Print Code ----------------------------------------------");
             Console.WriteLine("");
             foreach (var line in __migrationCommand.MigrationsCommands)
             {
